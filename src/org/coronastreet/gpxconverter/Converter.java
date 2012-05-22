@@ -1,3 +1,17 @@
+/* 
+*  Copyright 2012 Coronastreet Networks 
+*  Licensed under the Apache License, Version 2.0 (the "License"); 
+*  you may not use this file except in compliance with the License. 
+*  You may obtain a copy of the License at
+*
+*  http://www.apache.org/licenses/LICENSE-2.0 
+*
+*  Unless required by applicable law or agreed to in writing, software 
+*  distributed under the License is distributed on an "AS IS" BASIS, 
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or 
+*  implied. See the License for the specific language governing 
+*  permissions and limitations under the License 
+*/
 package org.coronastreet.gpxconverter;
 
 import java.io.IOException;
@@ -30,13 +44,13 @@ public class Converter {
 	private String inFile;
 	private String outFile;
 	
-	List trackPoints;
+	List<Trkpt> trackPoints;
 	private String StartTime;
 	private JTextArea statusTextArea;
 	
 	public Converter(){
 		//create a list to hold the employee objects
-		trackPoints = new ArrayList();
+		trackPoints = new ArrayList<Trkpt>();
 	}
 
 	public void convert (JTextArea txtArea) {
@@ -86,7 +100,7 @@ public class Converter {
 		}
 		
 		int trkCounter = 0;
-		Iterator it = trackPoints.iterator();
+		Iterator<Trkpt> it = trackPoints.iterator();
 		while(it.hasNext()) {
 			Trkpt t = (Trkpt)it.next();
 			Element tp = createTrackPointElement(t);
@@ -175,7 +189,7 @@ public class Converter {
 		//get the root element
 		Element docEle = (Element) inDoc.getDocumentElement();
 
-		//get a nodelist of  elements
+		//get a node list of  elements
 		NodeList nl = docEle.getElementsByTagName("trkpt");
 		if(nl != null && nl.getLength() > 0) {
 			for(int i = 0 ; i < nl.getLength();i++) {
