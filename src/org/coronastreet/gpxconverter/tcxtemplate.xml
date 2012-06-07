@@ -19,7 +19,7 @@
         <Track></Track>
       </Lap>
       <Creator xsi:type="Device_t">
-        <Name>Garmin Edge 800</Name>
+        <Name></Name>
         <UnitId>9999999</UnitId>
         <ProductID>1169</ProductID>
         <Version>

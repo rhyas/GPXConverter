@@ -20,12 +20,20 @@ import java.util.Iterator;
 import java.util.List;
 import java.io.FileOutputStream;
 import java.io.File;
+import java.io.StringWriter;
 
 import javax.swing.JTextArea;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
 import org.apache.xml.serialize.OutputFormat;
 import org.apache.xml.serialize.XMLSerializer;
 import org.w3c.dom.Document;
@@ -42,17 +50,27 @@ public class Converter {
 	private Document inDoc;
 	private Document outDoc;
 	private String inFile;
-	private String outFile;
+	private String outFile = "C:\\Users\\sysop\\temp.tcx";
 	
 	List<Trkpt> trackPoints;
 	private String StartTime;
 	private JTextArea statusTextArea;
+	protected String newline = "\n";
+	private String authToken;
+	private String ActivityType;
+	private String ActivityName;
+	private String DeviceType;
 	
 	public Converter(){
 		//create a list to hold the employee objects
 		trackPoints = new ArrayList<Trkpt>();
 	}
 
+	protected void statusLog(String actionDescription) {
+        statusTextArea.append(actionDescription + newline);
+        statusTextArea.setCaretPosition(statusTextArea.getDocument().getLength());
+    }
+	
 	public void convert (JTextArea txtArea) {
 		this.statusTextArea = txtArea;
 		
@@ -66,12 +84,14 @@ public class Converter {
 		loadOutFile();
 		
 		setIdAndStartTime();
+		setDeviceType();
 		
 		// Add the track data we imported to the output document
 		addTrackData();
 	
 		// Spit out the TCX file
-		printOutFile();
+		//printOutFile();
+		uploadActivity();
 	}
 		
 	private void printOutFile(){
@@ -86,6 +106,65 @@ public class Converter {
 		} catch(IOException ie) {
 		    ie.printStackTrace();
 		}
+	}
+	
+	private String convertDoc() {
+        OutputFormat format = new OutputFormat(outDoc);
+		format.setIndenting(true);
+		StringWriter stringOut = new StringWriter ();
+		XMLSerializer serializer = new XMLSerializer(stringOut, format);
+	    try {
+			serializer.serialize(outDoc);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	    return stringOut.toString();
+	}
+	
+	private void uploadActivity() {
+		HttpClient httpClient = new DefaultHttpClient();
+	    try {
+	        HttpPost request = new HttpPost("http://www.strava.com/api/v2/upload");
+	        JSONObject activityObject = new JSONObject();
+	        activityObject.put("token", authToken);
+	        activityObject.put("type", "TCX");
+	        activityObject.put("activity_type", ActivityType);
+	        activityObject.put("activity_name", ActivityName);
+	        String xmlData = convertDoc();
+	        activityObject.put("data", xmlData);
+	        
+	        StringEntity params = new StringEntity(activityObject.toString());
+	        //statusLog("Sending Entity: " + activityObject.toString());
+	        request.addHeader("content-type", "application/json");
+	        request.setEntity(params);
+	        HttpResponse response = httpClient.execute(request);
+
+	        if (response.getStatusLine().getStatusCode() != 200) {
+	        	statusLog("Failed to Upload");
+	        	HttpEntity entity = response.getEntity();
+	        	if (entity != null) {
+	        		String output = EntityUtils.toString(entity);
+	        		statusLog(output);
+	        	}
+			}
+	 
+	        HttpEntity entity = response.getEntity();
+	 
+			if (entity != null) {
+				String output = EntityUtils.toString(entity);
+				statusLog(output);
+				JSONObject userInfo = new JSONObject(output);
+				statusLog("Successful Uploaded. ID is " + userInfo.get("upload_id"));
+		    }
+			
+			
+	    }catch (Exception ex) {
+	        // handle exception here
+	    } finally {
+	        httpClient.getConnectionManager().shutdown();
+	    }
+		
 	}
 	
 	private void addTrackData() {
@@ -112,8 +191,19 @@ public class Converter {
 		
 	}
 	
+	private void setDeviceType() {
+		NodeList nl = outDoc.getElementsByTagName("Activity");
+		NodeList nl1 = ((Element) nl.item(0)).getElementsByTagName("Creator");
+		NodeList nl2 = ((Element) nl1.item(0)).getElementsByTagName("Name");
+		if(nl2 != null && nl2.getLength() > 0) {
+			Element el = (Element)nl2.item(0);
+			el.appendChild(outDoc.createTextNode(DeviceType));
+		}
+	}
+	
 	private void setIdAndStartTime() {
 		NodeList nl = outDoc.getElementsByTagName("Activity");
+		
 		
 		NodeList nl2 = ((Element) nl.item(0)).getElementsByTagName("Id");
 		if(nl2 != null && nl2.getLength() > 0) {
@@ -287,6 +377,38 @@ public class Converter {
 
 	public void setOutFile(String outFile) {
 		this.outFile = outFile;
+	}
+
+	public String getAuthToken() {
+		return authToken;
+	}
+
+	public void setAuthToken(String authToken) {
+		this.authToken = authToken;
+	}
+
+	public String getActivityType() {
+		return ActivityType;
+	}
+
+	public void setActivityType(String activityType) {
+		ActivityType = activityType;
+	}
+
+	public String getActivityName() {
+		return ActivityName;
+	}
+
+	public void setActivityName(String activityName) {
+		ActivityName = activityName;
+	}
+
+	public String getDeviceType() {
+		return DeviceType;
+	}
+
+	public void setDeviceType(String deviceType) {
+		DeviceType = deviceType;
 	}
 
 }
