@@ -174,7 +174,7 @@ public class MainWindow {
 			}
 		});
 		
-		btnNewButton.setBounds(320, 34, 78, 23);
+		btnNewButton.setBounds(320, 34, 95, 23);
 		frmStravaGpxConverter.getContentPane().add(btnNewButton);
 		
 		loginVal = new JTextField();
