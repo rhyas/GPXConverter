@@ -14,13 +14,13 @@
 */
 package org.coronastreet.gpxconverter;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.io.FileOutputStream;
-import java.io.File;
-import java.io.StringWriter;
 
 import javax.swing.JTextArea;
 import javax.xml.parsers.DocumentBuilder;
@@ -36,6 +36,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.xml.serialize.OutputFormat;
 import org.apache.xml.serialize.XMLSerializer;
+import org.json.JSONObject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -60,6 +61,7 @@ public class Converter {
 	private String ActivityType;
 	private String ActivityName;
 	private String DeviceType;
+	private String Brand;
 	
 	public Converter(){
 		//create a list to hold the employee objects
@@ -71,6 +73,7 @@ public class Converter {
         statusTextArea.setCaretPosition(statusTextArea.getDocument().getLength());
     }
 	
+	// brand can be garmin or mio
 	public void convert (JTextArea txtArea) {
 		this.statusTextArea = txtArea;
 		
@@ -78,7 +81,7 @@ public class Converter {
 		loadInFile(inFile);
 		
 		//load the Tracks from the GPX File
-		parseInFile();
+		parseInFile(Brand.toLowerCase());
 
 		//load the output template
 		loadOutFile();
@@ -274,7 +277,7 @@ public class Converter {
 		log("XML::: " + str);
 	}
 	
-	private void parseInFile(){
+	private void parseInFile(String brand){
 		log("Parsing Input File...\n");
 		//get the root element
 		Element docEle = (Element) inDoc.getDocumentElement();
@@ -294,9 +297,13 @@ public class Converter {
 				tp.setLon(el.getAttribute("lon"));
 				tp.setLat(el.getAttribute("lat"));
 				tp.setElevation(getTextValue(el, "ele"));
-				tp.setHr(getTextValue(el, "gpxtpx:hr"));
-				tp.setCad(getTextValue(el, "gpxtpx:cad"));
-				
+				if(brand.equals("garmin")){
+					tp.setHr(getTextValue(el, "gpxtpx:hr"));
+					tp.setCad(getTextValue(el, "gpxtpx:cad"));
+				} else if(brand.equals("mio")){
+					tp.setHr(getTextValue(el, "heartrate"));
+					tp.setCad(getTextValue(el, "cadence"));
+				}
 				//tp.dump();
 				
 				//add it to list
@@ -409,6 +416,14 @@ public class Converter {
 
 	public void setDeviceType(String deviceType) {
 		DeviceType = deviceType;
+	}
+
+	public String getBrand() {
+		return Brand;
+	}
+
+	public void setBrand(String brand) {
+		Brand = brand;
 	}
 
 }
