@@ -1,7 +1,7 @@
 GPXConverter
 ============
 
-Converter to upload Garmin GPX data with HR/Cadence into Strava.
+Converter to upload Garmin or Mio GPX data with HR/Cadence into Strava.
 
 To use on windows, make sure Java 1.7 is installed and simply download/save 
 

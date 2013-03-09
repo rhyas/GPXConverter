@@ -1,24 +1,22 @@
 package org.coronastreet.gpxconverter;
 
 import java.awt.EventQueue;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.File;
 
 import javax.swing.ButtonGroup;
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPasswordField;
-import javax.swing.SwingConstants;
-import javax.swing.JTextField;
-import javax.swing.JButton;
-import javax.swing.JFileChooser;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
-import javax.swing.JTextArea;
-import java.io.File;
-
-import javax.swing.JScrollPane;
-
-import java.awt.Font;
 import javax.swing.JRadioButton;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -27,8 +25,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
+import org.json.JSONObject;
 
 
 public class MainWindow {
@@ -44,6 +41,7 @@ public class MainWindow {
 	private String activityType;
 	private String altimeterEval;
 	private String authToken;
+	private String brand;
 
 	
 	/**
@@ -131,7 +129,7 @@ public class MainWindow {
 		frmStravaGpxConverter = new JFrame();
 		frmStravaGpxConverter.getContentPane().setFont(new Font("Tahoma", Font.BOLD, 11));
 		frmStravaGpxConverter.setTitle("Garmin GPX Importer for Strava");
-		frmStravaGpxConverter.setBounds(100, 100, 441, 426);
+		frmStravaGpxConverter.setBounds(100, 100, 441, 447);
 		frmStravaGpxConverter.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmStravaGpxConverter.getContentPane().setLayout(null);
 		
@@ -154,7 +152,7 @@ public class MainWindow {
 		statusTextArea.setRows(100);
 		statusTextArea.setLineWrap(true);
 		JScrollPane statusScroller = new JScrollPane(statusTextArea, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-		statusScroller.setBounds(10, 254, 405, 112);
+		statusScroller.setBounds(10, 275, 405, 112);
 		frmStravaGpxConverter.getContentPane().add(statusScroller);
 		
 		JLabel lblSourceGpxFile = new JLabel("Source GPX File");
@@ -218,17 +216,37 @@ public class MainWindow {
 		typeIsRun.addActionListener(new TypeAction());
 		typeIsRide.addActionListener(new TypeAction());
 		
+		JLabel lblBrand = new JLabel("Brand:");
+		lblBrand.setHorizontalAlignment(SwingConstants.RIGHT);
+		lblBrand.setBounds(10, 204, 86, 14);
+		frmStravaGpxConverter.getContentPane().add(lblBrand);
+		
+		JRadioButton brandGarmin = new JRadioButton("Garmin");
+		brandGarmin.setBounds(144, 196, 80, 23);
+		frmStravaGpxConverter.getContentPane().add(brandGarmin);
+		
+		JRadioButton brandMio = new JRadioButton("Mio");
+		brandMio.setBounds(230, 196, 57, 23);
+		frmStravaGpxConverter.getContentPane().add(brandMio);
+		
+		ButtonGroup brandGr = new ButtonGroup();
+		brandGr.add(brandGarmin);
+		brandGr.add(brandMio);
+		
+		brandGarmin.addActionListener(new BrandAction());
+		brandMio.addActionListener(new BrandAction());
+		
 		JLabel lblAltimeter = new JLabel("Altimeter:");
 		lblAltimeter.setHorizontalAlignment(SwingConstants.RIGHT);
-		lblAltimeter.setBounds(10, 204, 86, 14);
+		lblAltimeter.setBounds(10, 225, 86, 14);
 		frmStravaGpxConverter.getContentPane().add(lblAltimeter);
 		
 		JRadioButton altYes = new JRadioButton("Yes");
-		altYes.setBounds(144, 196, 51, 23);
+		altYes.setBounds(144, 217, 57, 23);
 		frmStravaGpxConverter.getContentPane().add(altYes);
 		
 		JRadioButton altNo = new JRadioButton("No");
-		altNo.setBounds(211, 196, 57, 23);
+		altNo.setBounds(211, 217, 57, 23);
 		frmStravaGpxConverter.getContentPane().add(altNo);
 		
 		ButtonGroup altimeterAvail = new ButtonGroup();
@@ -267,10 +285,16 @@ public class MainWindow {
 					c.setAuthToken(authToken);
 					c.setActivityName(txtActivityName.getText());
 					c.setActivityType(activityType);
-					if (altimeterEval.startsWith("Yes")) {
-						c.setDeviceType("Garmin Edge 800");
+					
+					c.setBrand(brand);
+					if(brand.equalsIgnoreCase("Garmin")){
+						if (altimeterEval.startsWith("Yes")) {
+							c.setDeviceType("Garmin Edge 800");
+						} else {
+							c.setDeviceType("Garmin Edge 200");
+						}
 					} else {
-						c.setDeviceType("Garmin Edge 200");
+						c.setDeviceType("Mio Cyclo 305 HC");
 					}
 					//c.setOutFile(txtDestFile.getText());
 					statusLog("Starting Conversion and Upload...");
@@ -281,7 +305,7 @@ public class MainWindow {
 				}
 			}
 		});
-		btnConvertIt.setBounds(144, 226, 131, 23);
+		btnConvertIt.setBounds(144, 247, 131, 23);
 		frmStravaGpxConverter.getContentPane().add(btnConvertIt);
 		
 
@@ -296,6 +320,12 @@ public class MainWindow {
 	public class DeviceAction implements ActionListener { 
 		public void actionPerformed(ActionEvent e) {
 			altimeterEval = e.getActionCommand();
+		}
+	}
+	
+	public class BrandAction implements ActionListener { 
+		public void actionPerformed(ActionEvent e) {
+			brand = e.getActionCommand();
 		}
 	}
 }
