@@ -50,7 +50,7 @@ public class Converter {
 	private Document inDoc;
 	private Document outDoc;
 	private String inFile;
-	private String outFile = "C:\\Users\\sysop\\temp.tcx";
+	private String outFile = "C:\\Temp\\temp.tcx";
 	
 	List<Trkpt> trackPoints;
 	private String StartTime;
@@ -92,6 +92,8 @@ public class Converter {
 		// Spit out the TCX file
 		//printOutFile();
 		uploadActivity();
+		
+		
 	}
 		
 	private void printOutFile(){
@@ -337,11 +339,11 @@ public class Converter {
 			inDoc = db.parse(file);
 			
 		}catch(ParserConfigurationException pce) {
-			pce.printStackTrace();
+			log(pce.getMessage());
 		}catch(SAXException se) {
-			se.printStackTrace();
+			log(se.getMessage());
 		}catch(IOException ioe) {
-			ioe.printStackTrace();
+			log(ioe.getMessage());
 		}
 		
 	}
