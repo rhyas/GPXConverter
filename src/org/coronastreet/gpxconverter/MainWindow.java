@@ -196,15 +196,15 @@ public class MainWindow {
 		frmStravaGpxConverter.getContentPane().add(lblNewLabel);
 		
 		JRadioButton typeIsRide = new JRadioButton("Ride");
-		typeIsRide.setBounds(144, 175, 57, 23);
+		typeIsRide.setBounds(131, 175, 57, 23);
 		frmStravaGpxConverter.getContentPane().add(typeIsRide);
 		
 		JRadioButton typeIsRun = new JRadioButton("Run");
-		typeIsRun.setBounds(211, 175, 57, 23);
+		typeIsRun.setBounds(226, 175, 57, 23);
 		frmStravaGpxConverter.getContentPane().add(typeIsRun);
 		
 		JRadioButton typeIsHike = new JRadioButton("Hike");
-		typeIsHike.setBounds(270, 175, 109, 23);
+		typeIsHike.setBounds(289, 175, 71, 23);
 		frmStravaGpxConverter.getContentPane().add(typeIsHike);
 		
 		ButtonGroup eventType = new ButtonGroup();
@@ -222,11 +222,11 @@ public class MainWindow {
 		frmStravaGpxConverter.getContentPane().add(lblBrand);
 		
 		JRadioButton brandGarmin = new JRadioButton("Garmin");
-		brandGarmin.setBounds(144, 196, 80, 23);
+		brandGarmin.setBounds(131, 196, 93, 23);
 		frmStravaGpxConverter.getContentPane().add(brandGarmin);
 		
 		JRadioButton brandMio = new JRadioButton("Mio");
-		brandMio.setBounds(230, 196, 57, 23);
+		brandMio.setBounds(226, 196, 57, 23);
 		frmStravaGpxConverter.getContentPane().add(brandMio);
 		
 		ButtonGroup brandGr = new ButtonGroup();
@@ -242,11 +242,11 @@ public class MainWindow {
 		frmStravaGpxConverter.getContentPane().add(lblAltimeter);
 		
 		JRadioButton altYes = new JRadioButton("Yes");
-		altYes.setBounds(144, 217, 57, 23);
+		altYes.setBounds(131, 218, 57, 23);
 		frmStravaGpxConverter.getContentPane().add(altYes);
 		
 		JRadioButton altNo = new JRadioButton("No");
-		altNo.setBounds(211, 217, 57, 23);
+		altNo.setBounds(226, 217, 57, 23);
 		frmStravaGpxConverter.getContentPane().add(altNo);
 		
 		ButtonGroup altimeterAvail = new ButtonGroup();
