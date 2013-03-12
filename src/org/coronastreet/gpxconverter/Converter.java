@@ -1,5 +1,5 @@
 /* 
-*  Copyright 2012 Coronastreet Networks 
+*  Copyright 2012-2013 Coronastreet Networks 
 *  Licensed under the Apache License, Version 2.0 (the "License"); 
 *  you may not use this file except in compliance with the License. 
 *  You may obtain a copy of the License at
@@ -17,9 +17,7 @@ package org.coronastreet.gpxconverter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import javax.swing.JTextArea;
@@ -27,26 +25,16 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.EntityUtils;
 import org.apache.xml.serialize.OutputFormat;
 import org.apache.xml.serialize.XMLSerializer;
-import org.json.JSONObject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
-import org.w3c.dom.ls.DOMImplementationLS;
-import org.w3c.dom.ls.LSSerializer;
 import org.xml.sax.SAXException;
 
 
 @SuppressWarnings("deprecation")
-public class Converter {
+public class Converter implements Runnable {
 
 	private Document inDoc;
 	private Document outDoc;
@@ -54,233 +42,116 @@ public class Converter {
 	private String outFile = "C:\\Temp\\temp.tcx";
 	
 	List<Trkpt> trackPoints;
-	private String StartTime;
+	private String rideStartTime;
 	private JTextArea statusTextArea;
 	protected String newline = "\n";
 	private String authToken;
-	private String ActivityType;
-	private String ActivityName;
-	private String DeviceType;
+	private String activityType;
+	private String activityName;
+	private String deviceType;
 	private String Brand;
+	private String email;
+	private String password;
+	private boolean hasAltimeter = false;
+	private boolean runStrava = false;
+	private boolean runRWGPS = false;
 	
 	public Converter(){
 		//create a list to hold the employee objects
 		trackPoints = new ArrayList<Trkpt>();
 	}
 
-	protected void statusLog(String actionDescription) {
-        statusTextArea.append(actionDescription + newline);
-        statusTextArea.setCaretPosition(statusTextArea.getDocument().getLength());
-    }
+	@Override
+	public void run() {	
+		this.convert();
+	}
 	
-	// brand can be garmin or mio
-	public void convert (JTextArea txtArea) {
-		this.statusTextArea = txtArea;
+	public void convert () {
 		
 		//parse the GPX file and get the dom object
 		loadInFile(inFile);
 		
 		//load the Tracks from the GPX File
-		parseInFile(Brand.toLowerCase());
+		parseInFile();
 
-		//load the output template
-		loadOutFile();
-		
-		setIdAndStartTime();
-		setDeviceType();
-		
-		// Add the track data we imported to the output document
-		addTrackData();
-	
-		// Spit out the TCX file
-		//printOutFile();
-		uploadActivity();
-		
-		
+		if (runRWGPS) {
+			doRWGPS();
+		}
+		if (runStrava) {
+			doStrava();
+		}
 	}
-		
+
+	// Not Currently used....but will use maybe someday...
 	private void printOutFile(){
 		try	{
 			OutputFormat format = new OutputFormat(outDoc);
 			format.setIndenting(true);
 			XMLSerializer serializer = new XMLSerializer(new FileOutputStream(new File(outFile)), format);
 
-			log("Writing out TCX file.\n");
+			log("Writing out TCX file.");
 			serializer.serialize(outDoc);
 
 		} catch(IOException ie) {
 		    ie.printStackTrace();
 		}
 	}
-	
-	private String convertDoc() {
-        OutputFormat format = new OutputFormat(outDoc);
-		format.setIndenting(true);
-		StringWriter stringOut = new StringWriter ();
-		XMLSerializer serializer = new XMLSerializer(stringOut, format);
-	    try {
-			serializer.serialize(outDoc);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	    return stringOut.toString();
-	}
-	
-	private void uploadActivity() {
-		HttpClient httpClient = new DefaultHttpClient();
-	    try {
-	        HttpPost request = new HttpPost("http://www.strava.com/api/v2/upload");
-	        JSONObject activityObject = new JSONObject();
-	        activityObject.put("token", authToken);
-	        activityObject.put("type", "TCX");
-	        activityObject.put("activity_type", ActivityType);
-	        activityObject.put("activity_name", ActivityName);
-	        String xmlData = convertDoc();
-	        activityObject.put("data", xmlData);
-	        
-	        StringEntity params = new StringEntity(activityObject.toString());
-	        //statusLog("Sending Entity: " + activityObject.toString());
-	        request.addHeader("content-type", "application/json");
-	        request.setEntity(params);
-	        HttpResponse response = httpClient.execute(request);
-
-	        if (response.getStatusLine().getStatusCode() != 200) {
-	        	statusLog("Failed to Upload");
-	        	HttpEntity entity = response.getEntity();
-	        	if (entity != null) {
-	        		String output = EntityUtils.toString(entity);
-	        		statusLog(output);
-	        	}
-			}
-	 
-	        HttpEntity entity = response.getEntity();
-	 
-			if (entity != null) {
-				String output = EntityUtils.toString(entity);
-				statusLog(output);
-				JSONObject userInfo = new JSONObject(output);
-				statusLog("Successful Uploaded. ID is " + userInfo.get("upload_id"));
-		    }
-			
-			
-	    }catch (Exception ex) {
-	        // handle exception here
-	    } finally {
-	        httpClient.getConnectionManager().shutdown();
-	    }
 		
+	private void doRWGPS() {
+		RideWithGPS rwgps = new RideWithGPS();
+		rwgps.setEmail(email);
+		rwgps.setPassword(password);
+		rwgps.setTripName(activityName);
+		rwgps.setDescription(activityName);
+		rwgps.setActivityType(activityType);
+		rwgps.setStatusTextArea(statusTextArea);
+		rwgps.setTrackPoints(trackPoints);
+		if (rwgps.processData()) {
+			rwgps.upload();
+		}
+	}	
+	
+	private void doStrava() {
+		Strava strava = new Strava();
+		strava.setEmail(email);
+		strava.setPassword(password);
+		strava.setTripName(activityName);
+		strava.setActivityType(activityType);
+		strava.setHasAltimeter(hasAltimeter);
+		strava.setStatusTextArea(statusTextArea);
+		strava.setTrackPoints(trackPoints);
+		strava.setRideStartTime(rideStartTime);
+		if (strava.processData()) {
+			strava.upload();
+		}
 	}
 	
-	private void addTrackData() {
-		// Get the Track element
-		Element track = null;
-		Element docEle = outDoc.getDocumentElement();
-
-		// GRabbing the track node. in theory, the node list should always return 1
-		NodeList nl = docEle.getElementsByTagName("Track");
+	private String getTextValue(Element ele, String tagName) {
+		String textVal = null;
+		NodeList nl;
+		nl = ele.getElementsByTagName(tagName);
 		if(nl != null && nl.getLength() > 0) {
-			track = (Element)nl.item(0);
-		}
-		
-		int trkCounter = 0;
-		Iterator<Trkpt> it = trackPoints.iterator();
-		while(it.hasNext()) {
-			Trkpt t = (Trkpt)it.next();
-			Element tp = createTrackPointElement(t);
-			//dumpNode(tp);
-			track.appendChild(tp);
-			trkCounter++;
-		}
-		log("Added " + trkCounter + " trackpoints to the template.\n");
-		
+			Element el = (Element)nl.item(0);
+			textVal = el.getFirstChild().getNodeValue(); 
+		} 
+		return textVal;
 	}
-	
-	private void setDeviceType() {
-		NodeList nl = outDoc.getElementsByTagName("Activity");
-		NodeList nl1 = ((Element) nl.item(0)).getElementsByTagName("Creator");
-		NodeList nl2 = ((Element) nl1.item(0)).getElementsByTagName("Name");
-		if(nl2 != null && nl2.getLength() > 0) {
-			Element el = (Element)nl2.item(0);
-			el.appendChild(outDoc.createTextNode(DeviceType));
-		}
-	}
-	
-	private void setIdAndStartTime() {
-		NodeList nl = outDoc.getElementsByTagName("Activity");
-		
-		
-		NodeList nl2 = ((Element) nl.item(0)).getElementsByTagName("Id");
-		if(nl2 != null && nl2.getLength() > 0) {
-			Element el = (Element)nl2.item(0);
-			el.appendChild(outDoc.createTextNode(StartTime));
-		}
-		
-		NodeList nl3 = ((Element) nl.item(0)).getElementsByTagName("Lap");
-		if(nl3 != null && nl3.getLength() > 0) {
-			Element el = (Element)nl3.item(0);
-			el.setAttribute("StartTime", StartTime);
-		}
-		
-	}
-	
-	private Element createTrackPointElement(Trkpt tp){
 
-		Element eTrackpoint = outDoc.createElement("Trackpoint");
-		
-		//create time element and time text node and attach it to the trackpoint
-		Element eTime = outDoc.createElement("Time");
-		eTime.appendChild(outDoc.createTextNode(tp.getTime()));
-		eTrackpoint.appendChild(eTime);
-		
-		//create elevation element and elevation text node and attach it to the trackpoint
-		Element eElevation = outDoc.createElement("AltitudeMeters");
-		eElevation.appendChild(outDoc.createTextNode(tp.getElevation()));
-		eTrackpoint.appendChild(eElevation);
-
-		//create Speed Sensor element and attach it to the Trackpoint
-		Element eSensorState = outDoc.createElement("SensorState");
-		eSensorState.appendChild(outDoc.createTextNode("Absent"));
-		eTrackpoint.appendChild(eSensorState);
-		
-		// Create Lat/Long and add them to Position
-		Element ePosition = outDoc.createElement("Position");
-		Element eLatitudeDegrees = outDoc.createElement("LatitudeDegrees");
-		eLatitudeDegrees.appendChild(outDoc.createTextNode(tp.getLat()));
-		Element eLongitudeDegrees = outDoc.createElement("LongitudeDegrees");
-		eLongitudeDegrees.appendChild(outDoc.createTextNode(tp.getLon()));
-		ePosition.appendChild(eLongitudeDegrees);
-		ePosition.appendChild(eLatitudeDegrees);
-		eTrackpoint.appendChild(ePosition);
-		
-		//create HeartRate and add it to the Trackpoint
-		Element eHR = outDoc.createElement("HeartRateBpm");
-		eHR.setAttribute("xsi:type", "HeartRateInBeatsPerMinute_t");
-		Element eHRValue = outDoc.createElement("Value");
-		eHRValue.appendChild(outDoc.createTextNode(tp.getHr()));
-		eHR.appendChild(eHRValue);
-		eTrackpoint.appendChild(eHR);
-		
-		//create Cadence element text node and add it to the Trackpoint
-		Element eCad = outDoc.createElement("Cadence");
-		eCad.appendChild(outDoc.createTextNode(tp.getCad()));
-		eTrackpoint.appendChild(eCad);
-		
-		return eTrackpoint;
-
+	private String getTextValue(Element ele, String[] tagNames) {
+		String textVal = null;
+		NodeList nl;
+		for (String tagName: tagNames) {
+			nl = ele.getElementsByTagName(tagName);
+			if(nl != null && nl.getLength() > 0) {
+				Element el = (Element)nl.item(0);
+				textVal = el.getFirstChild().getNodeValue();
+			}
+		}
+		return textVal;
 	}
 	
-	private void dumpNode(Element e) {
-		Document document = e.getOwnerDocument();
-		DOMImplementationLS domImplLS = (DOMImplementationLS) document
-		    .getImplementation();
-		LSSerializer serializer = domImplLS.createLSSerializer();
-		String str = serializer.writeToString(e);
-		log("XML::: " + str);
-	}
-	
-	private void parseInFile(String brand){
-		log("Parsing Input File...\n");
+	private void parseInFile(){
+		log("Parsing Input File...");
 		//get the root element
 		Element docEle = (Element) inDoc.getDocumentElement();
 
@@ -298,76 +169,44 @@ public class Converter {
 				tp.setTime(getTextValue(el, "time"));
 				tp.setLon(el.getAttribute("lon"));
 				tp.setLat(el.getAttribute("lat"));
+				
 				tp.setElevation(getTextValue(el, "ele"));
-				if(brand.equals("garmin")){
-					tp.setHr(getTextValue(el, "gpxtpx:hr"));
-					tp.setCad(getTextValue(el, "gpxtpx:cad"));
-				} else if(brand.equals("mio")){
-					tp.setHr(getTextValue(el, "heartrate"));
-					tp.setCad(getTextValue(el, "cadence"));
-				}
+				
+				// These fields can have multiple names (Garmin vs. Mio, etc.)
+				tp.setHr(getTextValue(el, new String[]{"gpxtpx:hr", "heartrate"}));
+				tp.setCad(getTextValue(el, new String[]{"gpxtpx:cad", "cadence"}));
+				
 				//tp.dump();
 				
 				//add it to list
 				trackPoints.add(tp);
 			}
 		}
-		log("Imported " + trackPoints.size() + " trackpoints.\n");
+		log("Imported " + trackPoints.size() + " trackpoints.");
 		
 		// set StartTime
 		NodeList ml = docEle.getElementsByTagName("metadata");
-		StartTime = getTextValue((Element)ml.item(0), "time");
-		log("Importing start time as " + StartTime + "\n");
-		
-		
+		rideStartTime = getTextValue((Element)ml.item(0), "time");
+		log("Importing start time as " + rideStartTime);
 	}
 	
 	private void log(String s) {
-		this.statusTextArea.append(s);
-		this.statusTextArea.repaint();
+		this.statusTextArea.append(s + "\n");
+		this.statusTextArea.repaint(1);
 	}
-	
-	private String getTextValue(Element ele, String tagName) {
-		String textVal = null;
-		NodeList nl = ele.getElementsByTagName(tagName);
-		if(nl != null && nl.getLength() > 0) {
-			Element el = (Element)nl.item(0);
-			textVal = el.getFirstChild().getNodeValue(); 
-		} 
 
-		return textVal;
-	}
-	
 	private void loadInFile(String file){
 		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 
 		try {
 			DocumentBuilder db = dbf.newDocumentBuilder();
 			inDoc = db.parse(file);
-			
 		}catch(ParserConfigurationException pce) {
 			log(pce.getMessage());
 		}catch(SAXException se) {
 			log(se.getMessage());
 		}catch(IOException ioe) {
 			log(ioe.getMessage());
-		}
-		
-	}
-
-	private void loadOutFile(){
-		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-
-		try {
-			DocumentBuilder db = dbf.newDocumentBuilder();
-			log("Loading TCX template file.\n");			
-			outDoc = db.parse(this.getClass().getResourceAsStream("/org/coronastreet/gpxconverter/tcxtemplate.xml"));
-		}catch(ParserConfigurationException pce) {
-			pce.printStackTrace();
-		}catch(SAXException se) {
-			se.printStackTrace();
-		}catch(IOException ioe) {
-			ioe.printStackTrace();
 		}
 		
 	}
@@ -397,27 +236,27 @@ public class Converter {
 	}
 
 	public String getActivityType() {
-		return ActivityType;
+		return activityType;
 	}
 
-	public void setActivityType(String activityType) {
-		ActivityType = activityType;
+	public void setActivityType(String at) {
+		activityType = at;
 	}
 
 	public String getActivityName() {
-		return ActivityName;
+		return activityName;
 	}
 
-	public void setActivityName(String activityName) {
-		ActivityName = activityName;
+	public void setActivityName(String an) {
+		activityName = an;
 	}
 
 	public String getDeviceType() {
-		return DeviceType;
+		return deviceType;
 	}
 
-	public void setDeviceType(String deviceType) {
-		DeviceType = deviceType;
+	public void setDeviceType(String dt) {
+		deviceType = dt;
 	}
 
 	public String getBrand() {
@@ -426,6 +265,41 @@ public class Converter {
 
 	public void setBrand(String brand) {
 		Brand = brand;
+	}
+
+	public void setStatusTextArea(JTextArea txtArea) {
+		this.statusTextArea = txtArea;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
+
+	public boolean hasAltimeter() {
+		return hasAltimeter;
+	}
+
+	public void setHasAltimeter(boolean hasAltimeter) {
+		this.hasAltimeter = hasAltimeter;
+	}
+	public void setDoStrava(boolean b) {
+		this.runStrava = b;
+	}
+
+	public void setDoRWGPS(boolean b) {
+		this.runRWGPS = b;
 	}
 
 }

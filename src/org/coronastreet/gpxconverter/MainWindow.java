@@ -1,3 +1,17 @@
+/* 
+*  Copyright 2012-2013 Coronastreet Networks 
+*  Licensed under the Apache License, Version 2.0 (the "License"); 
+*  you may not use this file except in compliance with the License. 
+*  You may obtain a copy of the License at
+*
+*  http://www.apache.org/licenses/LICENSE-2.0 
+*
+*  Unless required by applicable law or agreed to in writing, software 
+*  distributed under the License is distributed on an "AS IS" BASIS, 
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or 
+*  implied. See the License for the specific language governing 
+*  permissions and limitations under the License 
+*/
 package org.coronastreet.gpxconverter;
 
 import java.awt.EventQueue;
@@ -5,6 +19,7 @@ import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.prefs.Preferences;
 
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
@@ -17,15 +32,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
-
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.EntityUtils;
-import org.json.JSONObject;
+import javax.swing.JCheckBox;
 
 
 public class MainWindow {
@@ -41,8 +48,7 @@ public class MainWindow {
 	private String activityType;
 	private String altimeterEval;
 	private String authToken;
-	private String brand;
-
+	private Preferences prefs;
 	
 	/**
 	 * Launch the application.
@@ -67,75 +73,52 @@ public class MainWindow {
 		initialize();
 	}
 
+	private void setPref(String name, String value) {
+		prefs.put(name, value);
+	}
+	
+	private void setPref(String name, boolean value) { 
+		prefs.putBoolean(name, value);
+	}
+	
+	private boolean getBoolPref(String name) {
+		return prefs.getBoolean(name, false);
+	}
+	
+	private String getPref(String name) {
+		return prefs.get(name, null);
+	}
+	
+	private void delPref(String name) {
+		prefs.remove(name);
+	}
+	
 	protected void statusLog(String actionDescription) {
         statusTextArea.append(actionDescription + newline);
         statusTextArea.setCaretPosition(statusTextArea.getDocument().getLength()-1);
     }
 	
-	protected boolean doLogin() {
-		boolean ret = false;
-		
-		HttpClient httpClient = new DefaultHttpClient();
-		statusLog("Authenticating athlete...");
-	    try {
-	        HttpPost request = new HttpPost("http://www.strava.com/api/v2/authentication/login");
-	        String jsonString = "{\"email\":\"" + loginVal.getText() + "\",\"password\":\"" + new String(passwordVal.getPassword()) + "\"} ";
-	        StringEntity params = new StringEntity(jsonString);
-	        //statusLog("Sending Entity: " + jsonString);
-	        request.addHeader("content-type", "application/json");
-	        request.setEntity(params);
-	        HttpResponse response = httpClient.execute(request);
 
-	        if (response.getStatusLine().getStatusCode() != 200) {
-	        	statusLog("Failed to Login.");
-	        	HttpEntity entity = response.getEntity();
-	        	if (entity != null) {
-	        		String output = EntityUtils.toString(entity);
-	        		statusLog(output);
-	        	}
-			}
-	 
-	        HttpEntity entity = response.getEntity();
-	 
-			if (entity != null) {
-				String output = EntityUtils.toString(entity);
-				//statusLog(output);
-				JSONObject userInfo = new JSONObject(output);
-				JSONObject athleteInfo = userInfo.getJSONObject("athlete");
-				statusLog("Logged in as " + athleteInfo.get("name"));
-				authToken = (String)userInfo.get("token");
-				if (authToken.length() > 0) {
-					ret = true;
-				}
-		    } else {
-		    	statusLog("What happened?!");
-		    }
-			
-			
-	    }catch (Exception ex) {
-	        // handle exception here
-	    	ex.printStackTrace();
-	    } finally {
-	        httpClient.getConnectionManager().shutdown();
-	    }
-		
-		return ret;
-	}
 	
 	/**
 	 * Initialize the contents of the frame.
 	 */
 	private void initialize() {
+		
+		Preferences userRoot = Preferences.userRoot();
+	    prefs = userRoot.node( "com/coronastreet/gpxconverter/settings" );
+		  
 		frmStravaGpxConverter = new JFrame();
 		frmStravaGpxConverter.getContentPane().setFont(new Font("Tahoma", Font.BOLD, 11));
-		frmStravaGpxConverter.setTitle("Garmin GPX Importer for Strava");
+		frmStravaGpxConverter.setTitle("Garmin GPX Importer for Strava & RideWithGPS");
 		frmStravaGpxConverter.setBounds(100, 100, 441, 447);
 		frmStravaGpxConverter.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmStravaGpxConverter.getContentPane().setLayout(null);
 		
-		fc = new JFileChooser();
 		
-		JLabel lblThisToolConverts = new JLabel("Upload Ride Data from a Garmin GPX file with HR and Cadence data.");
+		fc = new JFileChooser(getPref("LastLocation"));
+		
+		JLabel lblThisToolConverts = new JLabel("Upload Ride Data from a GPX file with HR and Cadence data.");
 		lblThisToolConverts.setFont(new Font("Tahoma", Font.BOLD, 11));
 		lblThisToolConverts.setHorizontalAlignment(SwingConstants.CENTER);
 		lblThisToolConverts.setBounds(10, 11, 405, 14);
@@ -168,6 +151,7 @@ public class MainWindow {
 					txtSourceFile.setText(fc.getSelectedFile().getPath());
 					File f = new File("");
 					fc.setSelectedFile(f);
+					setPref("LastLocation", fc.getCurrentDirectory().getPath());
 				}
 			}
 		});
@@ -179,11 +163,21 @@ public class MainWindow {
 		loginVal.setBounds(100, 80, 210, 20);
 		frmStravaGpxConverter.getContentPane().add(loginVal);
 		loginVal.setColumns(10);
+		loginVal.setText(getPref("lastLoginVal"));
 		
 		passwordVal = new JPasswordField();
 		passwordVal.setBounds(100, 110, 210, 20);
 		frmStravaGpxConverter.getContentPane().add(passwordVal);
 		passwordVal.setColumns(10);
+		passwordVal.setText(getPref("lastPasswordVal"));
+		
+		final JCheckBox chckbxSave = new JCheckBox("Save?");
+		chckbxSave.setToolTipText("Note: This saves your password in Cleartext in the Registry on Windows, and in a File on Unix systems.");
+		chckbxSave.setBounds(320, 109, 97, 23);
+		frmStravaGpxConverter.getContentPane().add(chckbxSave);
+		if (getBoolPref("lastPasswordSave")) {
+			chckbxSave.setSelected(true);
+		}
 		
 		JLabel lblLogin = new JLabel("Login:");
 		lblLogin.setHorizontalAlignment(SwingConstants.RIGHT);
@@ -198,14 +192,17 @@ public class MainWindow {
 		JRadioButton typeIsRide = new JRadioButton("Ride");
 		typeIsRide.setBounds(131, 175, 57, 23);
 		frmStravaGpxConverter.getContentPane().add(typeIsRide);
+		if (getPref("lastType").equals("Ride")) { typeIsRide.setSelected(true); }
 		
 		JRadioButton typeIsRun = new JRadioButton("Run");
-		typeIsRun.setBounds(226, 175, 57, 23);
+		typeIsRun.setBounds(190, 175, 57, 23);
 		frmStravaGpxConverter.getContentPane().add(typeIsRun);
+		if (getPref("lastType").equals("Run")) { typeIsRun.setSelected(true); }
 		
 		JRadioButton typeIsHike = new JRadioButton("Hike");
-		typeIsHike.setBounds(289, 175, 71, 23);
+		typeIsHike.setBounds(249, 175, 71, 23);
 		frmStravaGpxConverter.getContentPane().add(typeIsHike);
+		if (getPref("lastType").equals("Hike")) { typeIsHike.setSelected(true); }
 		
 		ButtonGroup eventType = new ButtonGroup();
 		eventType.add(typeIsHike);
@@ -216,38 +213,20 @@ public class MainWindow {
 		typeIsRun.addActionListener(new TypeAction());
 		typeIsRide.addActionListener(new TypeAction());
 		
-		JLabel lblBrand = new JLabel("Brand:");
-		lblBrand.setHorizontalAlignment(SwingConstants.RIGHT);
-		lblBrand.setBounds(10, 204, 86, 14);
-		frmStravaGpxConverter.getContentPane().add(lblBrand);
-		
-		JRadioButton brandGarmin = new JRadioButton("Garmin");
-		brandGarmin.setBounds(131, 196, 93, 23);
-		frmStravaGpxConverter.getContentPane().add(brandGarmin);
-		
-		JRadioButton brandMio = new JRadioButton("Mio");
-		brandMio.setBounds(226, 196, 57, 23);
-		frmStravaGpxConverter.getContentPane().add(brandMio);
-		
-		ButtonGroup brandGr = new ButtonGroup();
-		brandGr.add(brandGarmin);
-		brandGr.add(brandMio);
-		
-		brandGarmin.addActionListener(new BrandAction());
-		brandMio.addActionListener(new BrandAction());
-		
 		JLabel lblAltimeter = new JLabel("Altimeter:");
 		lblAltimeter.setHorizontalAlignment(SwingConstants.RIGHT);
-		lblAltimeter.setBounds(10, 225, 86, 14);
+		lblAltimeter.setBounds(10, 201, 86, 14);
 		frmStravaGpxConverter.getContentPane().add(lblAltimeter);
 		
 		JRadioButton altYes = new JRadioButton("Yes");
-		altYes.setBounds(131, 218, 57, 23);
+		altYes.setBounds(131, 197, 57, 23);
 		frmStravaGpxConverter.getContentPane().add(altYes);
+		if (getPref("lastAltimeter").equals("Yes")) { altYes.setSelected(true); }
 		
 		JRadioButton altNo = new JRadioButton("No");
-		altNo.setBounds(226, 217, 57, 23);
+		altNo.setBounds(190, 197, 57, 23);
 		frmStravaGpxConverter.getContentPane().add(altNo);
+		if (getPref("lastAltimeter").equals("No")) { altNo.setSelected(true); }
 		
 		ButtonGroup altimeterAvail = new ButtonGroup();
 		altimeterAvail.add(altYes);
@@ -271,44 +250,64 @@ public class MainWindow {
 		frmStravaGpxConverter.getContentPane().add(txtActivityName);
 		txtActivityName.setColumns(10);
 		
-		JButton btnConvertIt = new JButton("Upload Data");
+		JLabel lblUploadTo = new JLabel("Upload To:");
+		lblUploadTo.setToolTipText("Note: Email and Password must match for each service.");
+		lblUploadTo.setHorizontalAlignment(SwingConstants.RIGHT);
+		lblUploadTo.setBounds(10, 222, 86, 14);
+		frmStravaGpxConverter.getContentPane().add(lblUploadTo);
+		
+		final JCheckBox chckbxStrava = new JCheckBox("Strava");
+		chckbxStrava.setToolTipText("Note: Email and Password must match for each service.");
+		chckbxStrava.setBounds(131, 218, 90, 23);
+		frmStravaGpxConverter.getContentPane().add(chckbxStrava);
+		
+		final JCheckBox chckbxRidewithgps = new JCheckBox("RideWithGPS");
+		chckbxRidewithgps.setToolTipText("Note: Email and Password must match for each service.");
+		chckbxRidewithgps.setBounds(223, 218, 123, 23);
+		frmStravaGpxConverter.getContentPane().add(chckbxRidewithgps);
+		
+		final JButton btnConvertIt = new JButton("Upload Data");
 		btnConvertIt.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (doLogin()) {
-					// Check stuff
-					//if (txtSourceFile.getText().equals(txtDestFile.getText())) {
-					//	txtStatusArea.append("Can't write to same file you read from!\n");
-					//	return;
-					//}
-					Converter c = new Converter();
-					c.setInFile(txtSourceFile.getText());
-					c.setAuthToken(authToken);
-					c.setActivityName(txtActivityName.getText());
-					c.setActivityType(activityType);
-					
-					c.setBrand(brand);
-					if(brand.equalsIgnoreCase("Garmin")){
-						if (altimeterEval.startsWith("Yes")) {
-							c.setDeviceType("Garmin Edge 800");
-						} else {
-							c.setDeviceType("Garmin Edge 200");
-						}
-					} else {
-						c.setDeviceType("Mio Cyclo 305 HC");
-					}
-					//c.setOutFile(txtDestFile.getText());
-					statusLog("Starting Conversion and Upload...");
-					c.convert(statusTextArea);		
-					statusLog("Finished!");
+				setPref("lastLoginVal", loginVal.getText());
+				setPref("lastType", activityType);
+				setPref("lastAltimeter", altimeterEval);
+				
+				if (chckbxSave.isSelected()) {
+					setPref("lastPasswordSave", true);
+					setPref("lastPasswordVal", new String(passwordVal.getPassword()));
 				} else {
-					statusLog("Problems Authenticating.");
+					delPref("lastPasswordVal");
+					setPref("lastPasswordSave", false);
 				}
+				Converter c = new Converter();
+				c.setInFile(txtSourceFile.getText());
+				c.setAuthToken(authToken);
+				c.setActivityName(txtActivityName.getText());
+				c.setActivityType(activityType);
+				c.setStatusTextArea(statusTextArea);
+				c.setPassword(new String(passwordVal.getPassword()));
+				c.setEmail(loginVal.getText());
+				if (altimeterEval.startsWith("Yes")) {
+				  c.setHasAltimeter(true);
+				}
+					
+				if (chckbxRidewithgps.isSelected()) {
+					c.setDoRWGPS(true);
+				}
+				if (chckbxStrava.isSelected()) {
+					c.setDoStrava(true);
+				}
+				//c.setOutFile(txtDestFile.getText());
+				statusLog("Starting Conversion and Upload...");
+				Thread t = new Thread(c, "Converter");
+				// Set the button the thread knows to enable when it's done. (yeah...lame way to do this...)
+				//btnConvertIt.setEnabled(false);
+				t.start();
 			}
 		});
 		btnConvertIt.setBounds(144, 247, 131, 23);
 		frmStravaGpxConverter.getContentPane().add(btnConvertIt);
-		
-
 	}
 	
 	public class TypeAction implements ActionListener { 
@@ -320,12 +319,6 @@ public class MainWindow {
 	public class DeviceAction implements ActionListener { 
 		public void actionPerformed(ActionEvent e) {
 			altimeterEval = e.getActionCommand();
-		}
-	}
-	
-	public class BrandAction implements ActionListener { 
-		public void actionPerformed(ActionEvent e) {
-			brand = e.getActionCommand();
 		}
 	}
 }
