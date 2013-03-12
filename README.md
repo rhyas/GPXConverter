@@ -30,5 +30,5 @@ Login/Password information is specific to the services you check to upload to. S
 if you check both Strava and RideWithGPS, make sure your login info matches for 
 both sites.
 
-Activity Type and Name don't work. This is a bug in Strava's API, not the
-application.
+Activity Type and Name don't work for Strava. This is a bug in Strava's API, not 
+the application.
