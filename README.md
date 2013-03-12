@@ -1,7 +1,9 @@
 GPXConverter
 ============
 
-Converter to upload Garmin or Mio GPX data with HR/Cadence into Strava.
+Converter to upload GPX data with HR/Cadence into Strava & RideWithGPS.
+
+(Known Compatible with Garmin eTrex & Mio devices)
 
 To use on windows, make sure Java 1.7 is installed and simply download/save 
 
@@ -11,12 +13,22 @@ and double click it to run it.
 
 Converter was concieved to allow Heart Rate and Cadence data that are supported
 by the eTrex 30 to be input in the Strava tracking website. But the converter 
-should work for any Garmin device that supports Cadence/HR Sensors.
+should work for any Garmin device that supports Cadence/HR Sensors. Mio support
+was added as well. (Thanks dvdeurse for the clues!)
 
-Note: When "Yes" is checked for Altimeter, the app plugs in "Garmin Edge 800" so 
+Notes: 
+
+When "Yes" is checked for Altimeter, the app plugs in "Garmin Edge 800" so 
 strava knows to use the readings in the file. If "No" is checked, the app plugs
 in "Garmin Edge 200" which doesn't have an altimeter, and Strava will then use
 it's own elevation profile database.
 
-Note: Activity Type and Name don't work. This is a bug in Strava's API, not the
+The Save Password option will store the password cleartext in the registry. Don't
+use it if you don't want that.
+
+Login/Password information is specific to the services you check to upload to. So
+if you check both Strava and RideWithGPS, make sure your login info matches for 
+both sites.
+
+Activity Type and Name don't work. This is a bug in Strava's API, not the
 application.
