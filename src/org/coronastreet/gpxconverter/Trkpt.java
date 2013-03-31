@@ -23,12 +23,14 @@ public class Trkpt {
 	private String hr;
 	private String cad;
 	private String time;
+	private String temp;
 	
 	public void dump() {
 		System.out.println("Trackpoint Object:");
 		System.out.println("\tLat = " + lat);
 		System.out.println("\tLon = " + lon);
 		System.out.println("\tTime = " + time);
+		System.out.println("\tTemp = " + temp);
 		System.out.println("\tHeartRate = " + hr);
 		System.out.println("\tCadence = " + cad);
 		System.out.println("\tElevation = " + elevation);
@@ -70,5 +72,13 @@ public class Trkpt {
 	}
 	public void setTime(String time) {
 		this.time = time;
+	}
+
+	public String getTemp() {
+		return temp;
+	}
+
+	public void setTemp(String temp) {
+		this.temp = temp;
 	}
 }

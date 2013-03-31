@@ -110,7 +110,7 @@ public class MainWindow {
 		  
 		frmStravaGpxConverter = new JFrame();
 		frmStravaGpxConverter.getContentPane().setFont(new Font("Tahoma", Font.BOLD, 11));
-		frmStravaGpxConverter.setTitle("Garmin GPX Importer for Strava & RideWithGPS");
+		frmStravaGpxConverter.setTitle("GPX Importer for Strava & RideWithGPS");
 		frmStravaGpxConverter.setBounds(100, 100, 441, 447);
 		frmStravaGpxConverter.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmStravaGpxConverter.getContentPane().setLayout(null);

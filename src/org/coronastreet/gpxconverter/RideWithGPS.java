@@ -131,11 +131,12 @@ public class RideWithGPS {
 	    element.put("y", Float.parseFloat(tp.getLat()));
 	    // convert the GPX Date to Timestamp
 	    SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-	    element.put("t", f.parse(tp.getTime()).getTime());
-	    // It's possible the device doesn't do HR/Cadence/Altitude. Skip em if they aren't there. 
+	    element.put("t", f.parse(tp.getTime()).getTime()/1000);
+	    // It's possible the device doesn't do HR/Cadence/Altitude/Temp. Skip em if they aren't there. 
 	    if (tp.getElevation() != null) { element.put("e", Float.parseFloat(tp.getElevation())); }
 	    if (tp.getHr() != null) { element.put("h", Integer.parseInt(tp.getHr())); }
 	    if (tp.getCad() != null) { element.put("c", Integer.parseInt(tp.getCad())); }
+	    if (tp.getTemp() != null) { element.put("T", Double.parseDouble(tp.getTemp())); }
 	  } catch (Exception e) {
 		  e.printStackTrace();
 	  }

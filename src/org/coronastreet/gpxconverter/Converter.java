@@ -175,6 +175,7 @@ public class Converter implements Runnable {
 				// These fields can have multiple names (Garmin vs. Mio, etc.)
 				tp.setHr(getTextValue(el, new String[]{"gpxtpx:hr", "heartrate"}));
 				tp.setCad(getTextValue(el, new String[]{"gpxtpx:cad", "cadence"}));
+				tp.setTemp(getTextValue(el, new String[]{"gpxtpx:atemp", "temp"}));
 				
 				//tp.dump();
 				

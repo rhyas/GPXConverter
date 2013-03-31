@@ -161,6 +161,11 @@ public class Strava {
 		eCad.appendChild(outDoc.createTextNode(tp.getCad()));
 		eTrackpoint.appendChild(eCad);
 		
+		//create Temperature element text node and add it to the trackpoint
+		Element eTemp = outDoc.createElement("Temperature");
+		eTemp.appendChild(outDoc.createTextNode(tp.getTemp()));
+		eTrackpoint.appendChild(eTemp);
+		
 		return eTrackpoint;
 
 	}
