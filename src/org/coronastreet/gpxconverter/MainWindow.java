@@ -45,8 +45,6 @@ public class MainWindow {
 	private JTextField loginVal;
 	private JPasswordField passwordVal;
 	private JTextField txtActivityName;
-	private String activityType;
-	private String altimeterEval;
 	private String authToken;
 	private Preferences prefs;
 	
@@ -74,6 +72,7 @@ public class MainWindow {
 	}
 
 	private void setPref(String name, String value) {
+		if (value == null) value = "";
 		prefs.put(name, value);
 	}
 	
@@ -86,7 +85,7 @@ public class MainWindow {
 	}
 	
 	private String getPref(String name) {
-		return prefs.get(name, null);
+		return prefs.get(name, "");
 	}
 	
 	private void delPref(String name) {
@@ -270,8 +269,6 @@ public class MainWindow {
 		btnConvertIt.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				setPref("lastLoginVal", loginVal.getText());
-				setPref("lastType", activityType);
-				setPref("lastAltimeter", altimeterEval);
 				
 				if (chckbxSave.isSelected()) {
 					setPref("lastPasswordSave", true);
@@ -284,11 +281,11 @@ public class MainWindow {
 				c.setInFile(txtSourceFile.getText());
 				c.setAuthToken(authToken);
 				c.setActivityName(txtActivityName.getText());
-				c.setActivityType(activityType);
+				c.setActivityType(getPref("lastType"));
 				c.setStatusTextArea(statusTextArea);
 				c.setPassword(new String(passwordVal.getPassword()));
 				c.setEmail(loginVal.getText());
-				if (altimeterEval.startsWith("Yes")) {
+				if (getPref("altimeterEval").startsWith("Yes")) {
 				  c.setHasAltimeter(true);
 				}
 					
@@ -312,13 +309,13 @@ public class MainWindow {
 	
 	public class TypeAction implements ActionListener { 
 		public void actionPerformed(ActionEvent e) {
-			activityType = e.getActionCommand();
+			setPref("lastType", e.getActionCommand());
 		}
 	}
 	
 	public class DeviceAction implements ActionListener { 
 		public void actionPerformed(ActionEvent e) {
-			altimeterEval = e.getActionCommand();
+			setPref("lastAltimeter", e.getActionCommand());
 		}
 	}
 }

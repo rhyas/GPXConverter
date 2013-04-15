@@ -187,7 +187,11 @@ public class Converter implements Runnable {
 		
 		// set StartTime
 		NodeList ml = docEle.getElementsByTagName("metadata");
-		rideStartTime = getTextValue((Element)ml.item(0), "time");
+		if (ml == null || ml.getLength() == 0) {
+			rideStartTime = trackPoints.get(0).getTime();
+		} else {
+			rideStartTime = getTextValue((Element)ml.item(0), "time");
+		}
 		log("Importing start time as " + rideStartTime);
 	}
 	
