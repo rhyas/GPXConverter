@@ -1,3 +1,7 @@
+NOTE: As of July 1. Srava decided to be jerks and eliminated their API. Thus, this
+no longer works. I will update it at some point. Maybe. If you're unhappy with this,
+please, by all means, complain to Strava for their bad decision.
+
 GPXConverter
 ============
 
