@@ -112,7 +112,7 @@ public class Converter implements Runnable {
 	}	
 	
 	private void doStrava() {
-		Strava strava = new Strava();
+		StravaForm strava = new StravaForm();
 		strava.setEmail(email);
 		strava.setPassword(password);
 		strava.setTripName(activityName);
