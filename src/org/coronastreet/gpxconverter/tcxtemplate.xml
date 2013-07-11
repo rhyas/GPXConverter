@@ -7,7 +7,7 @@
   xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ns4="http://www.garmin.com/xmlschemas/ProfileExtension/v1">
   <Activities>
-    <Activity Sport="MTB">
+    <Activity Sport="Biking">
       <Id></Id>
       <Lap>
         <TotalTimeSeconds>0</TotalTimeSeconds>
