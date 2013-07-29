@@ -285,7 +285,7 @@ public class MainWindow {
 				c.setStatusTextArea(statusTextArea);
 				c.setPassword(new String(passwordVal.getPassword()));
 				c.setEmail(loginVal.getText());
-				if (getPref("altimeterEval").startsWith("Yes")) {
+				if (getPref("lastAltimeter").startsWith("Yes")) {
 				  c.setHasAltimeter(true);
 				}
 					

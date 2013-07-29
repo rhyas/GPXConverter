@@ -61,6 +61,7 @@ import org.apache.http.util.EntityUtils;
 import org.apache.xml.serialize.OutputFormat;
 import org.apache.xml.serialize.XMLSerializer;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.select.Elements;
@@ -414,7 +415,7 @@ public class StravaForm {
 		}		
 	}
 
-	private void dumpNode(JSONObject o) {
+	private void dumpNode(JSONObject o) throws JSONException {
 		log(o.toString(2));
 	}
 	
