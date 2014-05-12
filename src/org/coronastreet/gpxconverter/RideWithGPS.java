@@ -33,6 +33,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.json.JSONException;
 
 public class RideWithGPS {
 
@@ -108,7 +109,7 @@ public class RideWithGPS {
 		return success;
 	}
 	
-	private void dumpNode(JSONObject o) {
+	private void dumpNode(JSONObject o) throws JSONException {
 		log(o.toString(2));
 	}
 	

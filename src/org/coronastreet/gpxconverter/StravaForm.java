@@ -18,6 +18,7 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -62,6 +63,7 @@ import org.apache.xml.serialize.OutputFormat;
 import org.apache.xml.serialize.XMLSerializer;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.json.JSONException;
 import org.jsoup.Jsoup;
 import org.jsoup.select.Elements;
 import org.w3c.dom.Document;
@@ -90,6 +92,7 @@ public class StravaForm {
 	private String rideStartTime;
 	private String deviceType;
 	private boolean hasAltimeter = false;
+	private String outFile = "C:\\Temp\\temp.tcx";
 	
 	private JTextArea statusTextArea;
 	private List<Trkpt> trackPoints;
@@ -117,7 +120,7 @@ public class StravaForm {
 	    boolean success = false;
 	    
 		//load the output template
-		loadOutFile();
+		loadTCXTemplate();
 		
 		setIdAndStartTime();
 		setDeviceType();
@@ -128,9 +131,23 @@ public class StravaForm {
 		}
 	
 		// Spit out the TCX file
-		//printOutFile();
+		// printOutFile();
 		success = true;
 		return success;
+	}
+	
+	private void printOutFile(){
+		try	{
+			OutputFormat format = new OutputFormat(outDoc);
+			format.setIndenting(true);
+			XMLSerializer serializer = new XMLSerializer(new FileOutputStream(new File(outFile)), format);
+
+			log("Writing out TCX file.");
+			serializer.serialize(outDoc);
+
+		} catch(IOException ie) {
+		    ie.printStackTrace();
+		}
 	}
 	
 	private void setIdAndStartTime() {
@@ -399,7 +416,7 @@ public class StravaForm {
 		return ret;
 	}
 		
-	private void loadOutFile(){
+	private void loadTCXTemplate(){
 		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 		try {
 			DocumentBuilder db = dbf.newDocumentBuilder();
@@ -414,7 +431,7 @@ public class StravaForm {
 		}		
 	}
 
-	private void dumpNode(JSONObject o) {
+	private void dumpNode(JSONObject o) throws JSONException {
 		log(o.toString(2));
 	}
 	
