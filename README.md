@@ -2,8 +2,8 @@
 GPXConverter
 ============
 
-Converter to upload GPX data with HR/Cadence/Temp/Elevation into Strava & 
-RideWithGPS.
+Converter to upload GPX data with HR/Cadence/Temp/Elevation into 
+Strava, Garmin Connect, & RideWithGPS.
 
 Known Compatible with Garmin eTrex, Oregon, & Mio devices
 
@@ -25,12 +25,6 @@ strava knows to use the readings in the file from the GPS. If "No" is checked,
 the app plugs in "Garmin Edge 200" which doesn't have an altimeter, and Strava 
 will then use it's own elevation profile database. 
 
-The Save Password option will store the password cleartext in the registry. Don't
-use it if you don't want that.
-
-Login/Password information is specific to the services you check to upload to. So
-if you check both Strava and RideWithGPS, make sure your login info matches for 
-both sites.
-
-Activity Type and Name don't work for Strava. They never worked in the Strava API,
-and now they have no generally available API. 
+Activity names only seem to work with RideWithGPS at the moment. Neither Strava
+nor Garmin Connect will pull the name out of the TCX file it seems. So you will 
+have to go in and rename your rides post-upload if you wish.
