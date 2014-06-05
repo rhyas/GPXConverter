@@ -1,5 +1,5 @@
 /* 
-*  Copyright 2012-2013 Coronastreet Networks 
+*  Copyright 2012-2014 Coronastreet Networks 
 *  Licensed under the Apache License, Version 2.0 (the "License"); 
 *  you may not use this file except in compliance with the License. 
 *  You may obtain a copy of the License at
@@ -39,7 +39,7 @@ public class Converter implements Runnable {
 	private Document inDoc;
 	private Document outDoc;
 	private String inFile;
-	private String outFile = "C:\\Temp\\temp.tcx";
+	private String outFile;
 	
 	List<Trkpt> trackPoints;
 	private String rideStartTime;
@@ -50,15 +50,24 @@ public class Converter implements Runnable {
 	private String activityName;
 	private String deviceType;
 	private String Brand;
-	private String email;
-	private String password;
 	private boolean hasAltimeter = false;
 	private boolean runStrava = false;
 	private boolean runRWGPS = false;
+	private boolean runGarmin = false;
 	
 	public Converter(){
 		//create a list to hold the employee objects
 		trackPoints = new ArrayList<Trkpt>();
+		
+		// Define the temp file so we know where it is on diff systems.
+		if (GPXConverter.isWindows()) {
+			outFile = "C:\\Temp\\temp.tcx";
+		} else if (GPXConverter.isUnix()) {
+			outFile = "/tmp/temp.tcx";
+		} else {
+			// Who knows where this will show up...
+			outFile = "temp.tcx";
+		}
 	}
 
 	@Override
@@ -80,6 +89,9 @@ public class Converter implements Runnable {
 		if (runStrava) {
 			doStrava();
 		}
+		if (runGarmin) {
+			doGarmin();
+		}
 	}
 
 	// Not Currently used....but will use maybe someday...
@@ -99,8 +111,12 @@ public class Converter implements Runnable {
 		
 	private void doRWGPS() {
 		RideWithGPS rwgps = new RideWithGPS();
-		rwgps.setEmail(email);
-		rwgps.setPassword(password);
+		rwgps.setEmail(GPXConverter.getPref("rwgps_username"));
+		try {
+			rwgps.setPassword(AccountManager.decrypt(GPXConverter.getPref("rwgps_password")));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		rwgps.setTripName(activityName);
 		rwgps.setDescription(activityName);
 		rwgps.setActivityType(activityType);
@@ -113,8 +129,12 @@ public class Converter implements Runnable {
 	
 	private void doStrava() {
 		StravaForm strava = new StravaForm();
-		strava.setEmail(email);
-		strava.setPassword(password);
+		strava.setEmail(GPXConverter.getPref("strava_username"));
+		try {
+			strava.setPassword(AccountManager.decrypt(GPXConverter.getPref("strava_password")));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		strava.setTripName(activityName);
 		strava.setActivityType(activityType);
 		strava.setHasAltimeter(hasAltimeter);
@@ -123,6 +143,25 @@ public class Converter implements Runnable {
 		strava.setRideStartTime(rideStartTime);
 		if (strava.processData()) {
 			strava.upload();
+		}
+	}
+	
+	private void doGarmin() {
+		GarminForm garmin = new GarminForm();
+		garmin.setEmail(GPXConverter.getPref("garmin_username"));
+		try {
+			garmin.setPassword(AccountManager.decrypt(GPXConverter.getPref("garmin_password")));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		garmin.setTripName(activityName);
+		garmin.setActivityType(activityType);
+		garmin.setHasAltimeter(hasAltimeter);
+		garmin.setStatusTextArea(statusTextArea);
+		garmin.setTrackPoints(trackPoints);
+		garmin.setRideStartTime(rideStartTime);
+		if (garmin.processData()) {
+			garmin.upload();
 		}
 	}
 	
@@ -276,22 +315,6 @@ public class Converter implements Runnable {
 		this.statusTextArea = txtArea;
 	}
 
-	public String getEmail() {
-		return email;
-	}
-
-	public void setEmail(String email) {
-		this.email = email;
-	}
-
-	public String getPassword() {
-		return password;
-	}
-
-	public void setPassword(String password) {
-		this.password = password;
-	}
-
 	public boolean hasAltimeter() {
 		return hasAltimeter;
 	}
@@ -307,4 +330,7 @@ public class Converter implements Runnable {
 		this.runRWGPS = b;
 	}
 
+	public void setDoGarmin(boolean b) {
+		this.runGarmin = b;
+	}
 }

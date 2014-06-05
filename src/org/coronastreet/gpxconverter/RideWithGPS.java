@@ -104,8 +104,8 @@ public class RideWithGPS {
 	    } catch (Exception e) {
 	    	e.printStackTrace();
 		} finally {
-			client.getConnectionManager().shutdown();
-		}
+            request.releaseConnection();
+        }
 		return success;
 	}
 	

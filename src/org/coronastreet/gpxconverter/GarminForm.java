@@ -26,6 +26,8 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.swing.JTextArea;
 import javax.xml.parsers.DocumentBuilder;
@@ -39,6 +41,7 @@ import org.apache.http.client.CookieStore;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.params.ClientPNames;
 import org.apache.http.client.params.CookiePolicy;
@@ -61,20 +64,16 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONException;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 import org.w3c.dom.Document;
-
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 @SuppressWarnings("deprecation")
-public class StravaForm {
+public class GarminForm {
 
-	private String loginURL = "https://www.strava.com/login";
-	private String sessionURL = "https://www.strava.com/session";
-	private String uploadFormURL = "http://app.strava.com/upload/select";
-	private String uploadURL = "http://app.strava.com/upload/files";
 	private HttpClient httpClient;  
 	private HttpContext localContext;
 	private CookieStore cookieStore;
@@ -91,7 +90,7 @@ public class StravaForm {
 	private JTextArea statusTextArea;
 	private List<Trkpt> trackPoints;
 	
-	public StravaForm() {
+	public GarminForm() {
 		
 	}
 
@@ -256,6 +255,23 @@ public class StravaForm {
 		return success;
 	}
 	
+	private static String findFlowKey(Node node) {
+		String key = null;
+        for (int i = 0; i < node.childNodes().size();) {
+            Node child = node.childNode(i);
+            if (child.nodeName().equals("#comment")) {
+                System.out.println(child.toString());
+                String flowKeyPattern = "\\<\\!-- flowExecutionKey\\: \\[(e1s1)\\] --\\>";
+            	key = child.toString().replaceAll(flowKeyPattern, "$1").trim();
+            	break;
+        	} else {
+                findFlowKey(child);
+                i++;
+            }
+        }
+        return key;
+    }
+	
 	public void upload() {
 		httpClient = new DefaultHttpClient();
 		localContext = new BasicHttpContext();
@@ -264,39 +280,19 @@ public class StravaForm {
 		httpClient.getParams().setParameter(ClientPNames.COOKIE_POLICY, CookiePolicy.BROWSER_COMPATIBILITY);
 		
 		if(doLogin()) {
-			//log("Ok....logged in...");
 			try {
-				// Have to fetch the form to get the CSRF Token
-		        HttpGet get = new HttpGet(uploadFormURL);
+		        HttpGet get = new HttpGet("http://connect.garmin.com/transfer/upload#");
 		        HttpResponse formResponse = httpClient.execute(get, localContext);
-		        //log("Fetched the upload form...: " + formResponse.getStatusLine());
-		        org.jsoup.nodes.Document doc = Jsoup.parse(EntityUtils.toString(formResponse.getEntity()));
-		        String csrftoken, csrfparam;
-		        Elements metalinksParam = doc.select("meta[name=csrf-param]");
-		        if (!metalinksParam.isEmpty()) {
-		        	csrfparam = metalinksParam.first().attr("content");
-		        } else {
-		        	csrfparam = null;
-		        	log("Missing csrf-param?");
-		        }
-		        Elements metalinksToken = doc.select("meta[name=csrf-token]");
-		        if (!metalinksToken.isEmpty()) {
-		        	csrftoken = metalinksToken.first().attr("content");
-		        } else {
-		        	csrftoken = null;
-		        	log("Missing csrf-token?");
-		        }
+		        HttpEntity formEntity = formResponse.getEntity();
+	            EntityUtils.consume(formEntity);
 		        
-				HttpPost request = new HttpPost(uploadURL);
-				request.setHeader("X-CSRF-Token", csrftoken);
-				
+				HttpPost request = new HttpPost("http://connect.garmin.com/proxy/upload-service-1.1/json/upload/.tcx");
+				request.setHeader("Referer", "http://connect.garmin.com/api/upload/widget/manualUpload.faces?uploadServiceVersion=1.1");
+				request.setHeader("Accept", "text/html, application/xhtml+xml, */*");
 				MultipartEntity entity = new MultipartEntity(HttpMultipartMode.BROWSER_COMPATIBLE);
-				entity.addPart("method", new StringBody("post"));
-				entity.addPart("new_uploader", new StringBody("1"));
-				entity.addPart(csrfparam, new StringBody(csrftoken));
-				entity.addPart("files[]", new InputStreamBody(document2InputStream(outDoc), "application/octet-stream", "temp.tcx"));
+				entity.addPart("data", new InputStreamBody(document2InputStream(outDoc), "application/octet-stream", "temp.tcx"));
 				
-				// Need to do this bit because without it you can't disable chunked encoding, and Strava doesn't support chunked.
+				// Need to do this bit because without it you can't disable chunked encoding
 				ByteArrayOutputStream bArrOS = new ByteArrayOutputStream();
 			    entity.writeTo(bArrOS);
 			    bArrOS.flush();
@@ -322,15 +318,20 @@ public class StravaForm {
 					HttpEntity ent = response.getEntity();
 					if (ent != null) {
 						String output = EntityUtils.toString(ent);
-						//log(output);
-						JSONObject userInfo = new JSONArray(output).getJSONObject(0);
-						//log("Object: " + userInfo.toString());
-						
-						if (userInfo.get("workflow").equals("Error")) {
-							log("Upload Error: " + userInfo.get("error"));
-						} else {
-							log("Successful Uploaded. ID is " + userInfo.get("id"));
-						}
+						output = "[" + output + "]"; //OMG Garmin Sucks at JSON.....
+					    JSONObject uploadResponse = new JSONArray(output).getJSONObject(0);
+					    JSONObject importResult = uploadResponse.getJSONObject("detailedImportResult");
+					    try {
+					    	int uploadID = importResult.getInt("uploadId");
+					    	log("Success! UploadID is " + uploadID);
+					    } catch (Exception e) {
+					    	JSONArray failures = (JSONArray)importResult.get("failures");
+					    	JSONObject failure = (JSONObject)failures.get(0);
+					    	JSONArray errorMessages = failure.getJSONArray("messages");
+					    	JSONObject errorMessage = errorMessages.getJSONObject(0);
+					    	String content = errorMessage.getString("content");
+					    	log("Upload Failed! Error: " + content);
+					    }
 					}
 				}
 			}catch (Exception ex) {
@@ -342,6 +343,7 @@ public class StravaForm {
 			log("Failed to upload!");
 		}
 	}
+
 	
 	protected InputStream document2InputStream(Document document) throws IOException {
 	      ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -354,60 +356,55 @@ public class StravaForm {
 	protected boolean doLogin() {
 		boolean ret = false;
 		log("Authenticating athlete...");
-	    try {
-	        HttpGet get = new HttpGet(loginURL);
-	        HttpResponse response = httpClient.execute(get, localContext);
-	        //log("Fetched the login form...: " + response.getStatusLine());
-	        org.jsoup.nodes.Document doc = Jsoup.parse(EntityUtils.toString(response.getEntity()));
-	        String csrftoken, csrfparam;
-	        
-	        Elements metalinksParam = doc.select("meta[name=csrf-param]");
-	        if (!metalinksParam.isEmpty()) {
-	        	csrfparam = metalinksParam.first().attr("content");
-	        	//log("Setting csrf-param to " + csrfparam);
-	        } else {
-	        	csrfparam = null;
-	        	log("Missing csrf-param?");
-	        }
-	        
-	        Elements metalinksToken = doc.select("meta[name=csrf-token]");
-	        if (!metalinksToken.isEmpty()) {
-	        	csrftoken = metalinksToken.first().attr("content");
-	        	//log("Setting csrf-token to " + csrftoken);
-	        } else {
-	        	csrftoken = null;
-	        	log("Missing csrf-token?");
-	        }
-	        
-	        HttpPost post = new HttpPost(sessionURL);
-	        post.setHeader("Referer", "https://www.strava.com/login");
+		
+		String gauthURL = "https://sso.garmin.com/sso/login?service=http%3A%2F%2Fconnect.garmin.com%2Fpost-auth%2Flogin&webhost=olaxpw-connect07.garmin.com&source=http%3A%2F%2Fconnect.garmin.com%2Fde-DE%2Fsignin&redirectAfterAccountLoginUrl=http%3A%2F%2Fconnect.garmin.com%2Fpost-auth%2Flogin&redirectAfterAccountCreationUrl=http%3A%2F%2Fconnect.garmin.com%2Fpost-auth%2Flogin&gauthHost=https%3A%2F%2Fsso.garmin.com%2Fsso&locale=de&id=gauth-widget&cssUrl=https%3A%2F%2Fstatic.garmincdn.com%2Fcom.garmin.connect%2Fui%2Fsrc-css%2Fgauth-custom.css&clientId=GarminConnect&rememberMeShown=true&rememberMeChecked=false&createAccountShown=true&openCreateAccount=false&usernameShown=true&displayNameShown=false&consumeServiceTicket=false&initialFocus=true&embedWidget=false";
+		try {
+			HttpGet get = new HttpGet(gauthURL);
+			HttpResponse formResponse = httpClient.execute(get, localContext);
+			//log("Fetched the gauth url...: " + formResponse.getStatusLine());
+			String out = EntityUtils.toString(formResponse.getEntity());
+			org.jsoup.nodes.Document doc = Jsoup.parse(out);
+			//System.out.println("RAW:\n" + out);
+			String flowKey = findFlowKey(doc);
+			//log("Looks like our Key is " + flowKey);
+			
+			HttpPost post = new HttpPost(gauthURL);
+	        post.setHeader("Referer", "https://sso.garmin.com/sso/login");
 	        List <NameValuePair> nvps = new ArrayList <NameValuePair>();
-	        nvps.add(new BasicNameValuePair(csrfparam, csrftoken));
-	        nvps.add(new BasicNameValuePair("plan", ""));
-	        nvps.add(new BasicNameValuePair("email", email));
-	        nvps.add(new BasicNameValuePair("password", password));
-
+	        nvps.add(new BasicNameValuePair("lt", flowKey));
+	        nvps.add(new BasicNameValuePair("embed", "true"));
+	        nvps.add(new BasicNameValuePair("username", GPXConverter.getPref("garmin_username")));
+	        nvps.add(new BasicNameValuePair("password", AccountManager.decrypt(GPXConverter.getPref("garmin_password"))));
+	        nvps.add(new BasicNameValuePair("_eventId", "submit"));
+	        
 	        post.setEntity(new UrlEncodedFormEntity(nvps, HTTP.UTF_8));
 	        
 	        HttpResponse sessionResponse = httpClient.execute(post, localContext);
 
-	        if (sessionResponse.getStatusLine().getStatusCode() != 302) {
-	        	log("Failed to Login. " + sessionResponse.getStatusLine().getStatusCode());
-	        	String output = EntityUtils.toString(sessionResponse.getEntity());
-	        	log(output);
-	        	ret = false;
-			} else {
-				ret = true;
-			}
+	        String output = EntityUtils.toString(sessionResponse.getEntity());
+	        Pattern ticketPattern = Pattern.compile("= '(http.*ticket=.*)';");
+	        Matcher m = ticketPattern.matcher(output);
+	        String ticketURL = null;
+	        while (m.find()) { ticketURL = m.group(1); }
+	        //log("Ticket? " + ticketURL);
 	        HttpEntity entity = sessionResponse.getEntity();
             EntityUtils.consume(entity);
-			
-	    }catch (Exception ex) {
-	        // handle exception here
-	    	ex.printStackTrace();
-	    }
+            
+            HttpHead head = new HttpHead(ticketURL);
+            HttpResponse headResponse = httpClient.execute(head, localContext);
+            
+            if (headResponse.getStatusLine().getStatusCode() == 200) {
+            	ret = true;
+            }
+            HttpEntity ent = headResponse.getEntity();
+            EntityUtils.consume(ent);
+            
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
 		return ret;
-	}
+	}	
 		
 	private void loadTCXTemplate(){
 		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -429,7 +426,7 @@ public class StravaForm {
 	}
 	
 	private void log(String s) {
-		this.statusTextArea.append("STRAVA: " + s + "\n");
+		this.statusTextArea.append("GARMIN: " + s + "\n");
 		this.statusTextArea.repaint(1);
 	}
 	
@@ -493,6 +490,4 @@ public class StravaForm {
 	public void setHasAltimeter(boolean hasAltimeter) {
 		this.hasAltimeter = hasAltimeter;
 	}
-	
-	
 }
