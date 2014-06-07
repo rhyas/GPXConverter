@@ -52,7 +52,6 @@ public class Converter implements Runnable {
 	private String Brand;
 	private String totalTimeInSeconds;
 	private String distanceMeters;
-	private String maximumSpeed = "0";
 	private boolean hasAltimeter = false;
 	private boolean runStrava = false;
 	private boolean runRWGPS = false;
@@ -98,6 +97,7 @@ public class Converter implements Runnable {
 	}
 
 	// Not Currently used....but will use maybe someday...
+	@SuppressWarnings("unused")
 	private void printOutFile(){
 		try	{
 			OutputFormat format = new OutputFormat(outDoc);

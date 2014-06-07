@@ -50,7 +50,6 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.content.InputStreamBody;
-import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
@@ -65,7 +64,6 @@ import org.json.JSONObject;
 import org.json.JSONException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Node;
-import org.jsoup.select.Elements;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -97,6 +95,7 @@ public class GarminForm {
 		
 	}
 
+	@SuppressWarnings("unused")
 	private String convertDoc() {
         OutputFormat format = new OutputFormat(outDoc);
 		format.setIndenting(true);
@@ -443,6 +442,7 @@ public class GarminForm {
 		}		
 	}
 
+	@SuppressWarnings("unused")
 	private void dumpNode(JSONObject o) throws JSONException {
 		log(o.toString(2));
 	}
@@ -452,6 +452,7 @@ public class GarminForm {
 		this.statusTextArea.repaint(1);
 	}
 	
+	@SuppressWarnings("unused")
 	private void log(InputStream is) {
 		try {
 			BufferedReader rd = new BufferedReader(new InputStreamReader(is));

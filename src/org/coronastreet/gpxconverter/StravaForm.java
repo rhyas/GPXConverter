@@ -49,7 +49,7 @@ import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.content.InputStreamBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.BasicCookieStore;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HTTP;
@@ -63,7 +63,6 @@ import org.json.JSONException;
 import org.jsoup.Jsoup;
 import org.jsoup.select.Elements;
 import org.w3c.dom.Document;
-
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -95,6 +94,7 @@ public class StravaForm {
 		
 	}
 
+	@SuppressWarnings("unused")
 	private String convertDoc() {
         OutputFormat format = new OutputFormat(outDoc);
 		format.setIndenting(true);
@@ -129,6 +129,7 @@ public class StravaForm {
 		return success;
 	}
 	
+	@SuppressWarnings("unused")
 	private void printOutFile(){
 		try	{
 			OutputFormat format = new OutputFormat(outDoc);
@@ -257,7 +258,7 @@ public class StravaForm {
 	}
 	
 	public void upload() {
-		httpClient = new DefaultHttpClient();
+		httpClient = HttpClientBuilder.create().build();
 		localContext = new BasicHttpContext();
 		cookieStore = new BasicCookieStore();
 		localContext.setAttribute(ClientContext.COOKIE_STORE, cookieStore);
@@ -424,6 +425,7 @@ public class StravaForm {
 		}		
 	}
 
+	@SuppressWarnings("unused")
 	private void dumpNode(JSONObject o) throws JSONException {
 		log(o.toString(2));
 	}
@@ -433,6 +435,7 @@ public class StravaForm {
 		this.statusTextArea.repaint(1);
 	}
 	
+	@SuppressWarnings("unused")
 	private void log(InputStream is) {
 		try {
 			BufferedReader rd = new BufferedReader(new InputStreamReader(is));

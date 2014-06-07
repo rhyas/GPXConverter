@@ -32,7 +32,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.apache.xml.serialize.OutputFormat;
 import org.apache.xml.serialize.XMLSerializer;
@@ -54,7 +54,6 @@ public class Strava {
 	private String tripName;
 	private String authToken;
 	private String activityType;
-	private Document tcxFile;
 	private Document outDoc;
 	private String rideStartTime;
 	private String deviceType;
@@ -67,7 +66,6 @@ public class Strava {
 		
 	}
 
-	@SuppressWarnings("deprecation")
 	private String convertDoc() {
         OutputFormat format = new OutputFormat(outDoc);
 		format.setIndenting(true);
@@ -216,7 +214,7 @@ public class Strava {
 	}
 	
 	public void upload() {
-		HttpClient httpClient = new DefaultHttpClient();
+		HttpClient httpClient = HttpClientBuilder.create().build();
 		if(doLogin()) {
 			try {
 				HttpPost request = new HttpPost(uploadURL);
@@ -263,7 +261,7 @@ public class Strava {
 	
 	protected boolean doLogin() {
 		boolean ret = false;
-		HttpClient httpClient = new DefaultHttpClient();
+		HttpClient httpClient = HttpClientBuilder.create().build();
 		log("Authenticating athlete...");
 	    try {
 	        HttpPost request = new HttpPost(authenticationURL);
@@ -278,7 +276,7 @@ public class Strava {
 	        	log("Failed to Login.");
 	        	HttpEntity entity = response.getEntity();
 	        	if (entity != null) {
-	        		String output = EntityUtils.toString(entity);
+	        		//String output = EntityUtils.toString(entity);
 	        		//log(output);
 	        	}
 			}
@@ -325,6 +323,7 @@ public class Strava {
 		}		
 	}
 
+	@SuppressWarnings("unused")
 	private void dumpNode(JSONObject o) {
 		log(o.toString(2));
 	}
@@ -334,6 +333,7 @@ public class Strava {
 		this.statusTextArea.repaint(1);
 	}
 	
+	@SuppressWarnings("unused")
 	private void log(InputStream is) {
 		try {
 			BufferedReader rd = new BufferedReader(new InputStreamReader(is));

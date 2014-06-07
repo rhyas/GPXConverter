@@ -29,7 +29,7 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -48,7 +48,6 @@ public class RideWithGPS {
 	private String description;
 	private JSONArray ridePoints;
 	private String activityType;
-	private String rideStartTime;
 	
 	private JTextArea statusTextArea;
 	private List<Trkpt> trackPoints;
@@ -76,7 +75,7 @@ public class RideWithGPS {
 	
 	public boolean upload() {
 		boolean success = false;
-		HttpClient client = new DefaultHttpClient();
+		HttpClient client = HttpClientBuilder.create().build();
 		HttpPost request = new HttpPost(URL);
 	    try {
 	    	// apikey=<apikey>&version=<version>&email=<email>&password=<password>&trip[name]=<name>&trip[description]=<description>&track_points=<JSON>
@@ -109,6 +108,7 @@ public class RideWithGPS {
 		return success;
 	}
 	
+	@SuppressWarnings("unused")
 	private void dumpNode(JSONObject o) throws JSONException {
 		log(o.toString(2));
 	}
@@ -149,6 +149,7 @@ public class RideWithGPS {
 		this.statusTextArea.repaint(1);
 	}
 	
+	@SuppressWarnings("unused")
 	private void log(InputStream is) {
 		try {
 			BufferedReader rd = new BufferedReader(new InputStreamReader(is));
