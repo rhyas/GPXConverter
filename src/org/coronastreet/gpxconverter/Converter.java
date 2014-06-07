@@ -50,6 +50,9 @@ public class Converter implements Runnable {
 	private String activityName;
 	private String deviceType;
 	private String Brand;
+	private String totalTimeInSeconds;
+	private String distanceMeters;
+	private String maximumSpeed = "0";
 	private boolean hasAltimeter = false;
 	private boolean runStrava = false;
 	private boolean runRWGPS = false;
@@ -160,6 +163,9 @@ public class Converter implements Runnable {
 		garmin.setStatusTextArea(statusTextArea);
 		garmin.setTrackPoints(trackPoints);
 		garmin.setRideStartTime(rideStartTime);
+		// Garmin doesn't seem to calculate these on it's own....
+		garmin.setTotalTimeInSeconds(totalTimeInSeconds);
+		garmin.setDistanceMeters(distanceMeters);
 		if (garmin.processData()) {
 			garmin.upload();
 		}
@@ -194,8 +200,11 @@ public class Converter implements Runnable {
 		//get the root element
 		Element docEle = (Element) inDoc.getDocumentElement();
 
+		int totalDistance = 0; //Distance in Meters
+		long totalTime = 0; // Total time in milliseconds
 		//get a node list of  elements
 		NodeList nl = docEle.getElementsByTagName("trkpt");
+		Location lastLoc = null;
 		if(nl != null && nl.getLength() > 0) {
 			for(int i = 0 ; i < nl.getLength();i++) {
 
@@ -220,10 +229,26 @@ public class Converter implements Runnable {
 				
 				//add it to list
 				trackPoints.add(tp);
+				
+				// Do some calculations for distance.
+				if (lastLoc == null) {
+					lastLoc = new Location(tp);
+				} else {
+					Location newLoc = new Location(tp);
+					totalDistance += lastLoc.distanceTo(newLoc);
+					totalTime += (newLoc.getTime() - lastLoc.getTime());
+					lastLoc = newLoc;
+				}
 			}
 		}
+		
 		log("Imported " + trackPoints.size() + " trackpoints.");
 		
+		log("Total Ride Time: " + getNiceTime(totalTime));
+		totalTimeInSeconds = Long.toString(totalTime / 1000);
+		double miles = totalDistance * 0.00062137119;
+		log("Total Distance Covered: " + miles + " miles.");
+		distanceMeters = Long.toString(totalDistance);
 		// set StartTime
 		NodeList ml = docEle.getElementsByTagName("metadata");
 		if (ml == null || ml.getLength() == 0) {
@@ -234,6 +259,22 @@ public class Converter implements Runnable {
 		log("Importing start time as " + rideStartTime);
 	}
 	
+	public static String getNiceTime(long millis) {
+        
+		int hours = (int) millis / (1000*60*60);
+		int minutes = (int) (millis % (1000*60*60)) / (1000*60);
+		int seconds = (int) (millis % (1000*60*60)) % (1000*60) / 1000;
+        
+        StringBuilder sb = new StringBuilder(64);
+        sb.append(hours);
+        sb.append(" Hours, ");
+        sb.append(minutes);
+        sb.append(" Minutes, ");
+        sb.append(seconds);
+        sb.append(" Seconds.");
+
+        return(sb.toString());
+    }
 	private void log(String s) {
 		this.statusTextArea.append(s + "\n");
 		this.statusTextArea.repaint(1);

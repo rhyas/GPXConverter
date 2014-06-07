@@ -84,6 +84,9 @@ public class GarminForm {
 	private Document outDoc;
 	private String rideStartTime;
 	private String deviceType;
+	private String totalTimeInSeconds;
+	private String distanceMeters;
+	private String maximumSpeed;	
 	private boolean hasAltimeter = false;
 	private String outFile = "C:\\Temp\\temp.tcx";
 	
@@ -115,6 +118,7 @@ public class GarminForm {
 		loadTCXTemplate();
 		
 		setIdAndStartTime();
+		setDistanceAndTime();
 		setDeviceType();
 		
 		// Add the track data we imported to the output document
@@ -123,7 +127,7 @@ public class GarminForm {
 		}
 	
 		// Spit out the TCX file
-		// printOutFile();
+		printOutFile();
 		success = true;
 		return success;
 	}
@@ -159,6 +163,24 @@ public class GarminForm {
 		
 	}
 	
+	private void setDistanceAndTime() {
+		NodeList nl = outDoc.getElementsByTagName("Activity");
+		NodeList nl1 = ((Element) nl.item(0)).getElementsByTagName("Lap");
+		
+		NodeList nl2 = ((Element) nl1.item(0)).getElementsByTagName("TotalTimeSeconds");
+		if(nl2 != null && nl2.getLength() > 0) {
+			Element el = (Element)nl2.item(0);
+			el.getFirstChild().setNodeValue(totalTimeInSeconds);
+		}
+		
+		NodeList nl3 = ((Element) nl.item(0)).getElementsByTagName("DistanceMeters");
+		if(nl3 != null && nl3.getLength() > 0) {
+			Element el = (Element)nl3.item(0);
+			el.getFirstChild().setNodeValue(distanceMeters);
+		}
+		
+		
+	}
 	private Element createTrackPointElement(Trkpt tp){
 
 		Element eTrackpoint = outDoc.createElement("Trackpoint");
@@ -260,7 +282,7 @@ public class GarminForm {
         for (int i = 0; i < node.childNodes().size();) {
             Node child = node.childNode(i);
             if (child.nodeName().equals("#comment")) {
-                System.out.println(child.toString());
+                //System.out.println(child.toString());
                 String flowKeyPattern = "\\<\\!-- flowExecutionKey\\: \\[(e1s1)\\] --\\>";
             	key = child.toString().replaceAll(flowKeyPattern, "$1").trim();
             	break;
@@ -487,6 +509,30 @@ public class GarminForm {
 		this.rideStartTime = rideStartTime;
 	}
 	
+	public String getTotalTimeInSeconds() {
+		return totalTimeInSeconds;
+	}
+
+	public void setTotalTimeInSeconds(String totalTimeInSeconds) {
+		this.totalTimeInSeconds = totalTimeInSeconds;
+	}
+
+	public String getDistanceMeters() {
+		return distanceMeters;
+	}
+
+	public void setDistanceMeters(String distanceMeters) {
+		this.distanceMeters = distanceMeters;
+	}
+
+	public String getMaximumSpeed() {
+		return maximumSpeed;
+	}
+
+	public void setMaximumSpeed(String maximumSpeed) {
+		this.maximumSpeed = maximumSpeed;
+	}
+
 	public void setHasAltimeter(boolean hasAltimeter) {
 		this.hasAltimeter = hasAltimeter;
 	}
