@@ -38,20 +38,19 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.CookieStore;
-import org.apache.http.client.HttpClient;
+
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.params.ClientPNames;
-import org.apache.http.client.params.CookiePolicy;
-import org.apache.http.client.protocol.ClientContext;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.content.InputStreamBody;
 import org.apache.http.impl.client.BasicCookieStore;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HTTP;
@@ -72,7 +71,7 @@ import org.xml.sax.SAXException;
 @SuppressWarnings("deprecation")
 public class GarminForm {
 
-	private HttpClient httpClient;  
+	private CloseableHttpClient httpClient;  
 	private HttpContext localContext;
 	private CookieStore cookieStore;
 	private String email;
@@ -294,11 +293,11 @@ public class GarminForm {
     }
 	
 	public void upload() {
-		httpClient = new DefaultHttpClient();
+		httpClient = HttpClientBuilder.create().build();
 		localContext = new BasicHttpContext();
 		cookieStore = new BasicCookieStore();
-		localContext.setAttribute(ClientContext.COOKIE_STORE, cookieStore);
-		httpClient.getParams().setParameter(ClientPNames.COOKIE_POLICY, CookiePolicy.BROWSER_COMPATIBILITY);
+		localContext.setAttribute(HttpClientContext.COOKIE_STORE, cookieStore);
+		//httpClient.getParams().setParameter(ClientPNames.COOKIE_POLICY, CookiePolicy.BROWSER_COMPATIBILITY);
 		
 		if(doLogin()) {
 			try {
@@ -355,6 +354,7 @@ public class GarminForm {
 					    }
 					}
 				}
+				httpClient.close();
 			}catch (Exception ex) {
 				log("Exception? " + ex.getMessage());
 				ex.printStackTrace();

@@ -26,9 +26,9 @@ import javax.swing.JTextArea;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONArray;
@@ -37,7 +37,7 @@ import org.json.JSONException;
 
 public class RideWithGPS {
 
-	// My Developer Key. If you Fork, please get your own. (:
+	// My Developer Key. If you Fork, do me the courtesy of getting your own. (:
 	private String apiKey = "mj8sn128";
 	private String apiVersion = "1";
 	private String URL = "http://ridewithgps.com/trips.json";
@@ -75,7 +75,7 @@ public class RideWithGPS {
 	
 	public boolean upload() {
 		boolean success = false;
-		HttpClient client = HttpClientBuilder.create().build();
+		CloseableHttpClient client = HttpClientBuilder.create().build();
 		HttpPost request = new HttpPost(URL);
 	    try {
 	    	// apikey=<apikey>&version=<version>&email=<email>&password=<password>&trip[name]=<name>&trip[description]=<description>&track_points=<JSON>
@@ -100,6 +100,7 @@ public class RideWithGPS {
 	        } else {
 	        	log("Response: " + response.getStatusLine().getStatusCode());
 	        }
+	        client.close();
 	    } catch (Exception e) {
 	    	e.printStackTrace();
 		} finally {

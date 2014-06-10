@@ -36,19 +36,17 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.CookieStore;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.params.ClientPNames;
-import org.apache.http.client.params.CookiePolicy;
-import org.apache.http.client.protocol.ClientContext;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.content.InputStreamBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.BasicCookieStore;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.BasicHttpContext;
@@ -74,7 +72,7 @@ public class StravaForm {
 	private String sessionURL = "https://www.strava.com/session";
 	private String uploadFormURL = "http://app.strava.com/upload/select";
 	private String uploadURL = "http://app.strava.com/upload/files";
-	private HttpClient httpClient;  
+	private CloseableHttpClient httpClient;  
 	private HttpContext localContext;
 	private CookieStore cookieStore;
 	private String email;
@@ -258,11 +256,12 @@ public class StravaForm {
 	}
 	
 	public void upload() {
-		httpClient = HttpClientBuilder.create().build();
+		//httpClient = new DefaultHttpClient();
+		httpClient = HttpClientBuilder.create().build(); 	
 		localContext = new BasicHttpContext();
 		cookieStore = new BasicCookieStore();
-		localContext.setAttribute(ClientContext.COOKIE_STORE, cookieStore);
-		httpClient.getParams().setParameter(ClientPNames.COOKIE_POLICY, CookiePolicy.BROWSER_COMPATIBILITY);
+		localContext.setAttribute(HttpClientContext.COOKIE_STORE, cookieStore);
+		//httpClient.getParams().setParameter(ClientPNames.COOKIE_POLICY, CookiePolicy.BROWSER_COMPATIBILITY);
 		
 		if(doLogin()) {
 			//log("Ok....logged in...");
@@ -334,6 +333,7 @@ public class StravaForm {
 						}
 					}
 				}
+				httpClient.close();
 			}catch (Exception ex) {
 				log("Exception? " + ex.getMessage());
 				ex.printStackTrace();
@@ -365,7 +365,7 @@ public class StravaForm {
 	        Elements metalinksParam = doc.select("meta[name=csrf-param]");
 	        if (!metalinksParam.isEmpty()) {
 	        	csrfparam = metalinksParam.first().attr("content");
-	        	//log("Setting csrf-param to " + csrfparam);
+	        	log("Setting csrf-param to " + csrfparam);
 	        } else {
 	        	csrfparam = null;
 	        	log("Missing csrf-param?");
@@ -374,7 +374,7 @@ public class StravaForm {
 	        Elements metalinksToken = doc.select("meta[name=csrf-token]");
 	        if (!metalinksToken.isEmpty()) {
 	        	csrftoken = metalinksToken.first().attr("content");
-	        	//log("Setting csrf-token to " + csrftoken);
+	        	log("Setting csrf-token to " + csrftoken);
 	        } else {
 	        	csrftoken = null;
 	        	log("Missing csrf-token?");
